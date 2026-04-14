@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
+import TextEvolution from "./TextEvolution";
 
 const H = 25, W = 25;
 const SETS = [
   { title: "EchoOoOOoooes",   init: "口", guests: ["曰","回","吅","㗊","响","昌","唱"] },
   { title: "See the forest for the trees",  init: "人", guests: ["木","从","丛","林","森","树"] },
-  { title: "placeholder", init: "口", guests: ["曰","回","吅","㗊","响","昌","唱"] },
-  { title: "placeholder",  init: "口", guests: ["曰","回","吅","㗊","响","昌","唱"] },
+  { title: "Let there be light", init: "日", guests: ["月","明","朝","昌","晶","暮"] },
+  { title: "Lost in translation", type: "text", text: "在這裡貼上你的繁體中文段落。" },
 ];
 const FREQS = [0.05, 0.08, 0.1, 0.15, 0.3]; // is there something more interesting i can set it as
 const PHASE_MS = 3000;
@@ -73,22 +74,27 @@ export default function App() {
           ← Back
         </button>
         <h2 className="view-title">{SETS[view].title}</h2>
-        <Grid key={key} set={SETS[view]} />
+        {SETS[view].type === "text"
+          ? <TextEvolution key={key} set={SETS[view]} />
+          : <Grid key={key} set={SETS[view]} />
+        }
       </div>
     );
   }
 
   return (
     <div className="page-home">
-      {SETS.map((s, i) => (
-        <div
-          key={i}
-          className="set-item"
-          onClick={() => { setView(i); setKey(k => k + 1); }}
-        >
-          {s.title}
-        </div>
-      ))}
+      <div className="set-grid">
+        {SETS.map((s, i) => (
+          <div
+            key={i}
+            className="set-item"
+            onClick={() => { setView(i); setKey(k => k + 1); }}
+          >
+            {s.title}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
