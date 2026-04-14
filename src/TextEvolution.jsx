@@ -36,6 +36,7 @@ function shuffle(arr) {
 
 export default function TextEvolutionPage({ onBack }) {
   const [step, setStep] = useState(0);
+  const [animating, setAnimating] = useState(false);
   const charsRef = useRef(CHINESE.map(p => p.split("")));
   const [chars, setChars] = useState(() => CHINESE.map(p => p.split("")));
   const simplifiedRef = useRef(CHINESE.map(p => new Array(p.split("").length).fill(false)));
@@ -70,10 +71,12 @@ export default function TextEvolutionPage({ onBack }) {
     const interval = PHASE_MS / targets.length;
     let placed = 0;
 
+    setAnimating(true);
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       if (placed >= targets.length) {
         clearInterval(timerRef.current);
+        setAnimating(false);
         return;
       }
       const [p, c] = targets[placed];
@@ -92,7 +95,7 @@ export default function TextEvolutionPage({ onBack }) {
   }, []);
 
   const advance = useCallback(() => {
-    if (!ready) return;
+    if (!ready || animating) return;
     setStep(prev => {
       if (prev >= MAX_STEP) return prev;
       const next = prev + 1;
@@ -104,7 +107,7 @@ export default function TextEvolutionPage({ onBack }) {
       }
       return next;
     });
-  }, [ready, triggerWave]);
+  }, [ready, animating, triggerWave]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -143,7 +146,7 @@ export default function TextEvolutionPage({ onBack }) {
       <div className="evolution-content">
         {paragraphs}
       </div>
-      {step < MAX_STEP && (
+      {step < MAX_STEP && !animating && (
         <button className="btn-advance" onClick={advance}>→</button>
       )}
     </div>
