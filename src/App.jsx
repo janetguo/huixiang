@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import "./App.css";
 
 const H = 25, W = 25;
 const SETS = [
@@ -55,13 +56,7 @@ function Grid({ set }) {
   }, [runPhase]);
 
   return (
-    <pre style={{
-      fontFamily: "'Inter', sans-serif",
-      fontSize: "14px",
-      lineHeight: "1.2",
-      letterSpacing: "2px",
-      textAlign: "center",
-    }}>
+    <pre className="grid-text">
       {grid.map(r => r.join("")).join("\n")}
     </pre>
   );
@@ -73,45 +68,23 @@ export default function App() {
 
   if (view !== null) {
     return (
-      <div style={{ background: "#000", color: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <button
-          onClick={() => setView(null)}
-          style={{
-            position: "fixed", top: 24, left: 24,
-            background: "none", border: "none", color: "#fff",
-            fontFamily: "'Times New Roman', serif", fontSize: "16px",
-            cursor: "pointer",
-          }}
-        >
+      <div className="page-view">
+        <button className="btn-back" onClick={() => setView(null)}>
           ← Back
         </button>
-        <h2 style={{ fontFamily: "'Times New Roman', serif", fontWeight: 400, marginBottom: 32 }}>
-          {SETS[view].title}
-        </h2>
+        <h2 className="view-title">{SETS[view].title}</h2>
         <Grid key={key} set={SETS[view]} />
       </div>
     );
   }
 
   return (
-    <div style={{
-      background: "#000", color: "#fff", minHeight: "100vh",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 48,
-    }}>
+    <div className="page-home">
       {SETS.map((s, i) => (
         <div
           key={i}
+          className="set-item"
           onClick={() => { setView(i); setKey(k => k + 1); }}
-          style={{
-            fontFamily: "'Times New Roman', serif",
-            fontSize: "24px",
-            cursor: "pointer",
-            padding: "12px 32px",
-            border: "1px solid #fff",
-            transition: "background 0.2s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#000"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#fff"; }}
         >
           {s.title}
         </div>
