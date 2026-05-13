@@ -94,6 +94,7 @@
   margin: 0 0 40px;
 }
 
+/* About page — commented out; uncomment to restore 关于 button styling.
 .btn-about {
   position: fixed;
   bottom: 24px;
@@ -111,6 +112,7 @@
 .btn-about:hover {
   opacity: 1;
 }
+*/
 
 .btn-advance {
   position: fixed;
@@ -164,4 +166,30 @@
 
 .grid-text.complete .grid-cell:hover {
   opacity: 1;
+}
+
+.rain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 50;
+}
+
+.rain-drop {
+  position: absolute;
+  top: 0;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  user-select: none;
+  animation-name: rain-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes rain-fall {
+  0%   { transform: translateY(-10vh); opacity: 0; }
+  10%  { opacity: 0.85; }
+  90%  { opacity: 0.85; }
+  100% { transform: translateY(110vh); opacity: 0; }
 }

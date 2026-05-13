@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
+/* About page — commented out; uncomment import + state + handlers + JSX below to restore.
 import TextEvolutionPage from "./TextEvolution";
+*/
 import { playCharSound } from "./sound";
 
 const H = 30, W = 30;
 const CLICKS_PER_GUEST = 5;
-const WALK_STEPS = 40;
+const WALK_STEPS = 50;
 const WALK_INTERVAL_MS = 15;
 const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
 
@@ -16,6 +18,9 @@ const SETS = [
     guests:      ["曰","回","吅","㗊","响","昌","唱"],
     transitions: ["—","口","口","吅","向","曰","口"],
     endCursor: 0x266B,
+    secondCursor: 0x58F0,
+    trigger: "回",
+    rainPair: "回声",
     english: {
       "口": "mouth",
       "曰": "speak",
@@ -44,6 +49,9 @@ const SETS = [
     guests:      ["木","从","丛","林","森","树"],
     transitions: ["十","人","__","木","木","对"],
     endCursor: 0x2698,
+    secondCursor: 0x6797,
+    trigger: "森",
+    rainPair: "森林",
     english: {
       "人": "person",
       "木": "tree",
@@ -68,6 +76,9 @@ const SETS = [
     guests:      ["月","明","朝","昌","晶","暮"],
     transitions: ["月","日","十","日","日","艹"],
     endCursor: 0x2600,
+    secondCursor: 0x5149,
+    trigger: "明",
+    rainPair: "光明",
     english: {
       "日": "sun",
       "月": "moon",
@@ -91,14 +102,17 @@ const SETS = [
     init: "又",
     guests:      ["双","叒","叕","叠","缀"],
     transitions: ["又","又","又","冝","纟"],
-    endCursor: "字",
+    endCursor: 0x221E,
+    secondCursor: 0x5B57,
+    trigger: "叠",
+    rainPair: "叠字",
     english: {
       "又": "again",
       "双": "pair",
       "叒": "thrice",
       "叕": "connected",
-      "叠": "stack",
-      "缀": "stitch",
+      "叠": "layered",
+      "缀": "connection",
     },
     dict: {
       "又": { "又": "双" },
@@ -206,43 +220,107 @@ function Grid({ set, isComplete, onGuestChange }) {
   );
 }
 
+function Rain({ pair }) {
+  const drops = useRef(
+    Array.from({ length: 60 }, () => ({
+      char: pair[Math.floor(Math.random() * pair.length)],
+      left: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 4 + Math.random() * 5,
+      size: 14 + Math.random() * 14,
+    }))
+  ).current;
+  return (
+    <div className="rain">
+      {drops.map((d, i) => (
+        <span
+          key={i}
+          className="rain-drop"
+          style={{
+            left: `${d.left}%`,
+            animationDelay: `${d.delay}s`,
+            animationDuration: `${d.duration}s`,
+            fontSize: `${d.size}px`,
+          }}
+        >
+          {d.char}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function App() {
   const [view, setView] = useState(null);
   const [key, setKey] = useState(0);
+  /* About page — commented out
   const [aboutView, setAboutView] = useState(false);
   const [aboutUnlocked, setAboutUnlocked] = useState(false);
+  */
   const [guestIndex, setGuestIndex] = useState(0);
   const [mousePos, setMousePos] = useState({ x: -200, y: -200 });
   const [clickedEnglish, setClickedEnglish] = useState(null);
+  const [completedSets, setCompletedSets] = useState(() => new Set());
+  const [backVisible, setBackVisible] = useState(false);
+  const [clickedChars, setClickedChars] = useState(() => new Set());
+  const [raining, setRaining] = useState(false);
+  const triggerSeenRef = useRef(false);
+
+  useEffect(() => {
+    if (view !== null && guestIndex >= SETS[view].guests.length) {
+      setCompletedSets(prev => prev.has(view) ? prev : new Set(prev).add(view));
+    }
+  }, [view, guestIndex]);
 
   const handleSetView = (i) => {
     setView(i);
     setKey(k => k + 1);
     setGuestIndex(0);
     setClickedEnglish(null);
-    setAboutUnlocked(true);
+    setBackVisible(false);
+    setClickedChars(new Set());
+    setRaining(false);
+    triggerSeenRef.current = false;
+    // setAboutUnlocked(true);
   };
 
+  /* About page — commented out
   if (aboutView) {
     return <TextEvolutionPage onBack={() => setAboutView(false)} />;
   }
+  */
 
   if (view !== null) {
     const set = SETS[view];
     const isComplete = guestIndex >= set.guests.length;
-    const cursorChar = isComplete && set.endCursor != null
-      ? String.fromCodePoint(set.endCursor)
-      : (set.transitions ?? set.guests)[Math.min(guestIndex, set.guests.length - 1)];
+    const expectedChars = Object.keys(set.english ?? {});
+    const allClicked = isComplete && expectedChars.every(c => clickedChars.has(c));
+    const cursorChar = !isComplete
+      ? (set.transitions ?? set.guests)[Math.min(guestIndex, set.guests.length - 1)]
+      : allClicked && set.secondCursor != null
+        ? String.fromCodePoint(set.secondCursor)
+        : set.endCursor != null
+          ? String.fromCodePoint(set.endCursor)
+          : "";
 
     const handlePageClick = (e) => {
       if (!isComplete) return;
       const cell = e.target.closest?.(".grid-cell");
-      if (cell) {
-        const char = cell.textContent;
-        playCharSound(char);
-        setClickedEnglish(set.english?.[char] ?? null);
-      } else {
-        setClickedEnglish(null);
+      if (!cell) return;
+      const char = cell.textContent;
+      // Phase 2: only the trigger responds.
+      if (allClicked && char !== set.trigger) return;
+      playCharSound(char);
+      setClickedEnglish(set.english?.[char] ?? null);
+      if (!allClicked) {
+        setClickedChars(prev => prev.has(char) ? prev : new Set(prev).add(char));
+      } else if (!triggerSeenRef.current && char === set.trigger) {
+        triggerSeenRef.current = true;
+        setTimeout(() => {
+          setClickedEnglish(null);
+          setBackVisible(true);
+          setRaining(true);
+        }, 1000);
       }
     };
 
@@ -252,14 +330,17 @@ export default function App() {
         onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}
         onClick={handlePageClick}
       >
-        <button className="btn-back" onClick={() => { setView(null); setClickedEnglish(null); }}>
-          ← Back
-        </button>
+        {backVisible && (
+          <button className="btn-back" onClick={() => { setView(null); setClickedEnglish(null); }}>
+            回
+          </button>
+        )}
         <h2 className="view-title">{clickedEnglish ?? set.title}</h2>
         <Grid key={key} set={set} isComplete={isComplete} onGuestChange={setGuestIndex} />
         <div className="grid-cursor" style={{ left: mousePos.x, top: mousePos.y }}>
           {cursorChar}
         </div>
+        {raining && set.rainPair && <Rain pair={set.rainPair} />}
       </div>
     );
   }
@@ -267,19 +348,25 @@ export default function App() {
   return (
     <div className="page-home">
       <div className="set-grid">
-        {SETS.map((s, i) => (
-          <div
-            key={i}
-            className="set-item"
-            onClick={() => handleSetView(i)}
-          >
-            {s.title}
-          </div>
-        ))}
+        {SETS.map((s, i) => {
+          const unlocked = i === 0 || completedSets.has(i - 1);
+          if (!unlocked) return null;
+          return (
+            <div
+              key={i}
+              className="set-item"
+              onClick={() => handleSetView(i)}
+            >
+              {s.title}
+            </div>
+          );
+        })}
       </div>
+      {/* About page — commented out
       {aboutUnlocked && (
         <button className="btn-about" onClick={() => setAboutView(true)}>关于</button>
       )}
+      */}
     </div>
   );
 }
